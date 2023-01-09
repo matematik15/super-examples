@@ -5,8 +5,10 @@ const {
     deployTestFramework
 } = require("@superfluid-finance/ethereum-contracts/dev-scripts/deploy-test-framework")
 const TestToken = require("@superfluid-finance/ethereum-contracts/build/contracts/TestToken.json")
+const SpreaderArtifact = require("../artifacts/contracts/TokenSpreader.sol/TokenSpreader.json")
 
 let sf
+let spreaderFactory
 let spreader
 let dai
 let daix
@@ -80,15 +82,17 @@ before(async function () {
 
     //// INITIALIZING SPREADER CONTRACT
 
-    const spreaderContractFactory = await ethers.getContractFactory(
-        "TokenSpreader",
-        admin
+    const SpreaderFactory = await ethers.getContractFactory("SpreaderFactory", admin)
+    spreaderFactory = await SpreaderFactory.deploy()
+
+    await spreaderFactory.deployed()
+
+    await spreaderFactory.createNewSpreader(
+        daix.address
     )
 
-    spreader = await spreaderContractFactory.deploy(
-        daix.address, // Setting DAIx as spreader token
-        admin.address
-    )
+    let spreaders = await spreaderFactory.getOwnerSpreaders(admin.address)
+    spreader = new ethers.Contract(spreaders[0], SpreaderArtifact.abi, admin)
 
     //// SUBSCRIBING TO SPREADER CONTRACT'S IDA INDEX
 
