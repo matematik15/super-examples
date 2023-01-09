@@ -1,0 +1,17 @@
+{
+  accounts(where: 
+  #EOA address:
+  { id: "0xabc...123" }
+  ) {
+    subscriptions(orderBy: createdAtTimestamp, orderDirection: desc) {
+      index {
+        publisher {
+          id
+        }
+        totalUnits
+      }
+      approved
+      units
+    }
+  }
+}

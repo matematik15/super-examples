@@ -1,0 +1,25 @@
+{
+  accounts(
+    where: {
+      id_in: [
+        #TokenSpreader addresses:
+        "0x123...abc"
+        "0x321...cba"
+      ]
+    }
+    orderBy: createdAtTimestamp
+    orderDirection: desc
+  ) {
+    id
+    publishedIndexes {
+      totalUnits
+      subscriptions(orderBy: createdAtTimestamp, where: { units_not: "0" }) {
+        subscriber {
+          id
+        }
+        units
+        approved
+      }
+    }
+  }
+}
