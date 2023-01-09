@@ -86,7 +86,8 @@ before(async function () {
     )
 
     spreader = await spreaderContractFactory.deploy(
-        daix.address // Setting DAIx as spreader token
+        daix.address, // Setting DAIx as spreader token
+        admin.address
     )
 
     //// SUBSCRIBING TO SPREADER CONTRACT'S IDA INDEX
@@ -103,14 +104,14 @@ before(async function () {
 describe("TokenSpreader Test Sequence", async () => {
     it("Distribution with [ no units outstanding ] and [ no spreaderTokens held ]", async function () {
         // distribution SHOULD REVERT since no units are outstanding
-        await expect(spreader.connect(alice).distribute()).to.be.reverted
+        await expect(spreader.connect(admin).distribute()).to.be.reverted
     })
 
     it("Distribution with [ 1 unit issued ] but [ 0 spreaderTokens held ] - gainShare", async function () {
         // ACTIONS
 
         // Alice claims distribution unit
-        await spreader.connect(alice).gainShare(alice.address)
+        await spreader.connect(admin).gainShare(alice.address)
 
         // EXPECTATIONS
 
@@ -125,14 +126,14 @@ describe("TokenSpreader Test Sequence", async () => {
         await expect(aliceSubscription.units).to.equal("1")
 
         // distribution SHOULD NOT REVERT if there are outstanding units issued
-        await expect(spreader.connect(alice).distribute()).to.be.not.reverted
+        await expect(spreader.connect(admin).distribute()).to.be.not.reverted
     })
 
     it("Distribution with [ 2 units issued to different accounts ] but [ 0 spreaderTokens ] - gainShare", async function () {
         // ACTIONS
 
         // Bob claims distribution unit
-        await spreader.connect(bob).gainShare(bob.address)
+        await spreader.connect(admin).gainShare(bob.address)
 
         // EXPECTATIONS
 
@@ -157,7 +158,7 @@ describe("TokenSpreader Test Sequence", async () => {
         await expect(bobSubscription.units).to.equal("1")
 
         // distribution SHOULD NOT REVERT if there are outstanding units issued
-        await expect(spreader.connect(alice).distribute()).to.be.not.reverted
+        await expect(spreader.connect(admin).distribute()).to.be.not.reverted
     })
 
     it("Distribution with [ 2 units issued to different accounts ] and [ 100 spreaderTokens ] - gainShare", async function () {
@@ -229,7 +230,7 @@ describe("TokenSpreader Test Sequence", async () => {
         // ACTIONS
 
         // Bob claims another distribution unit
-        await spreader.connect(bob).gainShare(bob.address)
+        await spreader.connect(admin).gainShare(bob.address)
 
         // Admin gives spreader 100 DAIx
         await daix
@@ -305,7 +306,7 @@ describe("TokenSpreader Test Sequence", async () => {
         // ACTIONS
 
         // Alice deletes here entire subscription
-        await spreader.connect(alice).deleteShares(alice.address)
+        await spreader.connect(admin).deleteShares(alice.address)
 
         // Admin gives spreader 100 DAIx
         await daix
@@ -377,7 +378,7 @@ describe("TokenSpreader Test Sequence", async () => {
         // ACTIONS
 
         // Bob deletes one of his two units
-        await spreader.connect(bob).loseShare(bob.address)
+        await spreader.connect(admin).loseShare(bob.address)
 
         // Admin gives spreader 100 DAIx
         await daix
@@ -449,7 +450,7 @@ describe("TokenSpreader Test Sequence", async () => {
         // ACTIONS
 
         // Bob deletes his last unit
-        await spreader.connect(bob).loseShare(bob.address)
+        await spreader.connect(admin).loseShare(bob.address)
 
         // Admin gives spreader 100 DAIx
         await daix

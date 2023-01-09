@@ -16,18 +16,35 @@ contract TokenSpreader {
     /// @notice Index ID. Never changes.
     uint32 public constant INDEX_ID = 0;
 
-    constructor(ISuperToken _spreaderToken) {
+    address private _owner;
+
+    constructor(ISuperToken _spreaderToken, address _creator) {
+        _owner = _creator;
         spreaderToken = _spreaderToken;
 
         // Creates the IDA Index through which tokens will be distributed
         _spreaderToken.createIndex(INDEX_ID);
     }
 
+    //Ownership based on OpenZeppelin's implementation. Just importing Ownable wouldn't work directly since we're using factory.
+    function owner() public view virtual returns (address) {
+        return _owner;
+    }
+
+    function _checkOwner() internal view virtual {
+        require(owner() == msg.sender, "Ownable: caller is not the owner");
+    }
+    
+    modifier onlyOwner() {
+        _checkOwner();
+        _;
+    }
+
     // ---------------------------------------------------------------------------------------------
     // IDA OPERATIONS
 
     /// @notice Takes the entire balance of the designated spreaderToken in the contract and distributes it out to unit holders w/ IDA
-    function distribute() public {
+    function distribute() public onlyOwner {
         uint256 spreaderTokenBalance = spreaderToken.balanceOf(address(this));
 
         (uint256 actualDistributionAmount, ) = spreaderToken.calculateDistribution(
@@ -41,7 +58,7 @@ contract TokenSpreader {
 
     /// @notice lets an account gain a single distribution unit
     /// @param subscriber subscriber address whose units are to be incremented
-    function gainShare(address subscriber) public {
+    function gainShare(address subscriber) public onlyOwner {
         // Get current units subscriber holds
         (, , uint256 currentUnitsHeld, ) = spreaderToken.getSubscription(
             address(this),
@@ -59,7 +76,7 @@ contract TokenSpreader {
 
     /// @notice lets an account lose a single distribution unit
     /// @param subscriber subscriber address whose units are to be decremented
-    function loseShare(address subscriber) public {
+    function loseShare(address subscriber) public onlyOwner {
         // Get current units subscriber holds
         (, , uint256 currentUnitsHeld, ) = spreaderToken.getSubscription(
             address(this),
@@ -77,7 +94,7 @@ contract TokenSpreader {
 
     /// @notice allows an account to delete its entire subscription this contract
     /// @param subscriber subscriber address whose subscription is to be deleted
-    function deleteShares(address subscriber) public {
+    function deleteShares(address subscriber) public onlyOwner {
         spreaderToken.deleteSubscription(address(this), INDEX_ID, subscriber);
     }
 }
