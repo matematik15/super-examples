@@ -28,7 +28,7 @@ async function main() {
         customHttpProvider
     )
 
-    const loanAddress = await loanFactory.getLoanAddressByID(LoanId)
+    const loanAddress = await loanFactory.idToLoan(LoanId)
 
     console.log(`The address of loan ${LoanId} is ${loanAddress}`)
 }
