@@ -108,7 +108,7 @@ before(async function () {
 describe("TokenSpreader Test Sequence", async () => {
     it("Distribution with [ no units outstanding ] and [ no spreaderTokens held ]", async function () {
         // distribution SHOULD REVERT since no units are outstanding
-        await expect(spreader.connect(admin).distribute()).to.be.reverted
+        await expect(spreader.connect(admin).distribute(0)).to.be.reverted
     })
 
     it("Distribution with [ 1 unit issued ] but [ 0 spreaderTokens held ] - gainShare", async function () {
@@ -130,7 +130,7 @@ describe("TokenSpreader Test Sequence", async () => {
         await expect(aliceSubscription.units).to.equal("1")
 
         // distribution SHOULD NOT REVERT if there are outstanding units issued
-        await expect(spreader.connect(admin).distribute()).to.be.not.reverted
+        await expect(spreader.connect(admin).distribute(0)).to.be.not.reverted
     })
 
     it("Distribution with [ 2 units issued to different accounts ] but [ 0 spreaderTokens ] - gainShare", async function () {
@@ -162,7 +162,7 @@ describe("TokenSpreader Test Sequence", async () => {
         await expect(bobSubscription.units).to.equal("1")
 
         // distribution SHOULD NOT REVERT if there are outstanding units issued
-        await expect(spreader.connect(admin).distribute()).to.be.not.reverted
+        await expect(spreader.connect(admin).distribute(0)).to.be.not.reverted
     })
 
     it("Distribution with [ 2 units issued to different accounts ] and [ 100 spreaderTokens ] - gainShare", async function () {
@@ -189,7 +189,7 @@ describe("TokenSpreader Test Sequence", async () => {
         })
 
         // Distribution executed
-        await expect(spreader.connect(admin).distribute()).to.be.not.reverted
+        await expect(spreader.connect(admin).distribute(distributionAmount)).to.be.not.reverted
 
         // EXPECTATIONS
 
@@ -255,7 +255,7 @@ describe("TokenSpreader Test Sequence", async () => {
         })
 
         // Distribution executed
-        await expect(spreader.connect(admin).distribute()).to.be.not.reverted
+        await expect(spreader.connect(admin).distribute(distributionAmount)).to.be.not.reverted
 
         // EXPECTATIONS
 
@@ -331,7 +331,7 @@ describe("TokenSpreader Test Sequence", async () => {
         })
 
         // Distribution executed
-        await expect(spreader.connect(admin).distribute()).to.be.not.reverted
+        await expect(spreader.connect(admin).distribute(distributionAmount)).to.be.not.reverted
 
         // EXPECTATIONS
 
@@ -403,7 +403,7 @@ describe("TokenSpreader Test Sequence", async () => {
         })
 
         // Distribution executed
-        await expect(spreader.connect(admin).distribute()).to.be.not.reverted
+        await expect(spreader.connect(admin).distribute(distributionAmount)).to.be.not.reverted
 
         // EXPECTATIONS
 
@@ -475,7 +475,7 @@ describe("TokenSpreader Test Sequence", async () => {
         })
 
         // distribution SHOULD REVERT since no units are outstanding
-        await expect(spreader.connect(admin).distribute()).to.be.reverted
+        await expect(spreader.connect(admin).distribute(distributionAmount)).to.be.reverted
 
         // EXPECTATIONS
 

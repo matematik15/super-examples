@@ -44,13 +44,13 @@ contract TokenSpreader {
     // IDA OPERATIONS
 
     /// @notice Takes the entire balance of the designated spreaderToken in the contract and distributes it out to unit holders w/ IDA
-    function distribute() public onlyOwner {
-        uint256 spreaderTokenBalance = spreaderToken.balanceOf(address(this));
+    /// @param distributeAmount token amount to be distributed
+    function distribute(uint256 distributeAmount) public onlyOwner {
 
         (uint256 actualDistributionAmount, ) = spreaderToken.calculateDistribution(
             address(this),
             INDEX_ID,
-            spreaderTokenBalance
+            distributeAmount
         );
 
         spreaderToken.distribute(INDEX_ID, actualDistributionAmount);
