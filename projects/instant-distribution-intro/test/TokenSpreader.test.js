@@ -111,7 +111,7 @@ describe("TokenSpreader Test Sequence", async () => {
         // ACTIONS
 
         // Alice claims distribution unit
-        await spreader.connect(admin).gainShare(alice.address)
+        await spreader.connect(admin).gainShares(alice.address, 1)
 
         // EXPECTATIONS
 
@@ -133,7 +133,7 @@ describe("TokenSpreader Test Sequence", async () => {
         // ACTIONS
 
         // Bob claims distribution unit
-        await spreader.connect(admin).gainShare(bob.address)
+        await spreader.connect(admin).gainShares(bob.address, 1)
 
         // EXPECTATIONS
 
@@ -230,7 +230,7 @@ describe("TokenSpreader Test Sequence", async () => {
         // ACTIONS
 
         // Bob claims another distribution unit
-        await spreader.connect(admin).gainShare(bob.address)
+        await spreader.connect(admin).gainShares(bob.address, 1)
 
         // Admin gives spreader 100 DAIx
         await daix
@@ -378,7 +378,7 @@ describe("TokenSpreader Test Sequence", async () => {
         // ACTIONS
 
         // Bob deletes one of his two units
-        await spreader.connect(admin).loseShare(bob.address)
+        await spreader.connect(admin).loseShares(bob.address, 1)
 
         // Admin gives spreader 100 DAIx
         await daix
@@ -450,7 +450,7 @@ describe("TokenSpreader Test Sequence", async () => {
         // ACTIONS
 
         // Bob deletes his last unit
-        await spreader.connect(admin).loseShare(bob.address)
+        await spreader.connect(admin).loseShares(bob.address, 1)
 
         // Admin gives spreader 100 DAIx
         await daix

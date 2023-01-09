@@ -56,9 +56,10 @@ contract TokenSpreader {
         spreaderToken.distribute(INDEX_ID, actualDistributionAmount);
     }
 
-    /// @notice lets an account gain a single distribution unit
+    /// @notice lets an account gain distribution units
     /// @param subscriber subscriber address whose units are to be incremented
-    function gainShare(address subscriber) public onlyOwner {
+    /// @param shares number of shares to be incremented
+    function gainShares(address subscriber, uint32 shares) public onlyOwner {
         // Get current units subscriber holds
         (, , uint256 currentUnitsHeld, ) = spreaderToken.getSubscription(
             address(this),
@@ -66,17 +67,18 @@ contract TokenSpreader {
             subscriber
         );
 
-        // Update to current amount + 1
+        // Update to current amount + shares
         spreaderToken.updateSubscriptionUnits(
             INDEX_ID,
             subscriber,
-            uint128(currentUnitsHeld + 1)
+            uint128(currentUnitsHeld + shares)
         );
     }
 
-    /// @notice lets an account lose a single distribution unit
+    /// @notice lets an account lose distribution units
     /// @param subscriber subscriber address whose units are to be decremented
-    function loseShare(address subscriber) public onlyOwner {
+    /// @param shares number of shares to be decremented from the subscriber
+    function loseShares(address subscriber, uint32 shares) public onlyOwner {
         // Get current units subscriber holds
         (, , uint256 currentUnitsHeld, ) = spreaderToken.getSubscription(
             address(this),
@@ -84,11 +86,11 @@ contract TokenSpreader {
             subscriber
         );
 
-        // Update to current amount - 1 (reverts if currentUnitsHeld - 1 < 0, so basically if currentUnitsHeld = 0)
+        // Update to current amount - shares (reverts if currentUnitsHeld - shares < 0, so basically if currentUnitsHeld = 0)
         spreaderToken.updateSubscriptionUnits(
             INDEX_ID,
             subscriber,
-            uint128(currentUnitsHeld - 1)
+            uint128(currentUnitsHeld - shares)
         );
     }
 
