@@ -10,7 +10,8 @@ const deployedTokenSpreaderAddress = process.env.TOKENSPREADER_ADDRESS // INPUT 
 async function main() {
     // Get signer object to use when calling functions
     let alice
-    ;[alice] = await ethers.getSigners()
+    let bob
+    ;[alice, bob] = await ethers.getSigners()
 
     // Setting up network object - this is set as the goerli url, but can be changed to reflect your RPC URL and network of choice
     const url = `${process.env.GOERLI_URL}`
@@ -37,18 +38,16 @@ async function main() {
 
     // Get spreader token object and print out balance of it held by TokenSpreader (fDAIx)
     // const spreaderToken = new ethers.Contract( await tokenSpreader.spreaderToken() , SuperTokenABI , customHttpProvider);
-    console.log(
-        "Original TokenSpreader spreaderToken Balance:",
-        await daix.balanceOf({
-            account: tokenSpreader.address,
-            providerOrSigner: alice
-        })
-    )
+    const totalBalance = await daix.balanceOf({
+        account: tokenSpreader.address,
+        providerOrSigner: alice
+    })
+    console.log( "Original TokenSpreader spreaderToken Balance: ", totalBalance)
 
     // Get outstanding units of tokenSpreader's IDA index
     const indexDataTokenSpreader = await daix.getIndex({
         publisher: tokenSpreader.address,
-        indexId: await tokenSpreader.INDEX_ID(),
+        indexId: 0,
         providerOrSigner: alice
     })
 
@@ -65,7 +64,10 @@ async function main() {
         parseInt(indexDataTokenSpreader.totalUnitsApproved) +
         parseInt(indexDataTokenSpreader.totalUnitsPending)
     if (totalUnitsOutstanding != 0) {
-        const distributeTx = await tokenSpreader.connect(alice).distribute()
+        const decimals = 18;
+        const amount = 10;
+        const amountFormatted = ethers.utils.parseUnits(amount.toString(), decimals);
+        const distributeTx = await tokenSpreader.connect(alice).distribute(amountFormatted)
         await distributeTx.wait()
         console.log("Distributed successfully!")
     } else {

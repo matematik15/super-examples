@@ -38,39 +38,30 @@ async function main() {
     // This is fDAIx on goerli - you can change this token to suit your network and desired token address
     const daix = await sf.loadSuperToken("fDAIx")
 
-    console.log("Running gainShares() script...")
+    console.log("Running approveSubscription script...")
 
     // View shares that shareGainer has
     console.log(
         `Original ${shareGainer.address} units held:`,
         (
-            await daix.getSubscription({
+            await sf.idaV1.getSubscription({
+                superToken: daix.address,
                 publisher: tokenSpreader.address,
-                indexId: await tokenSpreader.INDEX_ID(),
+                indexId: "0",
                 subscriber: shareGainer.address,
-                providerOrSigner: alice
+                providerOrSigner: bob
             })
         ).units
     )
 
-    // Give shareGainer a share
-    const gainShareTx = await tokenSpreader
-        .connect(alice)
-        .gainShares(shareGainer.address, 1)
-    await gainShareTx.wait()
-
-    // View shares that shareGainer has
-    console.log(
-        `New ${shareGainer.address} units held:`,
-        (
-            await daix.getSubscription({
-                publisher: tokenSpreader.address,
-                indexId: await tokenSpreader.INDEX_ID(),
-                subscriber: shareGainer.address,
-                providerOrSigner: alice
-            })
-        ).units
-    )
+    // shareGainer will subscribe to tokenSpreader's index so that tokens will successfully go through to them
+    // NOTE: if an account is not subscribed, but receives a distribution, its tokens will essentially “hang in limbo” until the account subscribes, after which they will go through
+    const subscribeOperation = sf.idaV1.approveSubscription({
+        indexId: await tokenSpreader.INDEX_ID(),
+        superToken: daix.address,
+        publisher: tokenSpreader.address
+    })
+    await subscribeOperation.exec(shareGainer)
 }
 
 // We recommend this pattern to be able to use async/await everywhere
