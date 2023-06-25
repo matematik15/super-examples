@@ -32,7 +32,7 @@ before(async function () {
     //// GETTING SUPERFLUID FRAMEWORK SET UP
 
     // deploy the framework locally
-    let contractsFramework = await sfDeployer.getFramework()
+    let contractsFramework = await sfDeployer.frameworkDeployer.getFramework()
 
     // initialize framework
     sf = await Framework.create({
@@ -45,7 +45,7 @@ before(async function () {
     //// DEPLOYING DAI and DAI wrapper super token (which will be our `spreaderToken`)
 
     // Deploy a fake erc20 test token
-    await sfDeployer.deployWrapperSuperToken(
+    await sfDeployer.superTokenDeployer.deployWrapperSuperToken(
         "Fake DAI Token",
         "fDAI",
         18,
