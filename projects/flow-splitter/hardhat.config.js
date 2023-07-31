@@ -13,6 +13,12 @@ module.exports = {
          ,accounts: [
              `${process.env.DEPLOYER_PRIVATE_KEY}`
          ]
-     }
+     },
+     celo: {
+      url: `${process.env.CELO_URL}`
+      ,accounts: [
+          `${process.env.DEPLOYER_PRIVATE_KEY}`
+      ]
+    }
   }
 };

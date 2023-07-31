@@ -12,23 +12,16 @@ contract FlowSplitter is SuperAppBaseFlow {
 
     using SuperTokenV1Library for ISuperToken;
 
-    /// @dev Account that ought to be routed the majority of the inflows
-    address public mainReceiver;
-
-    /// @dev Accout that ought to be routed the minority of the inflows
-    address public sideReceiver;
-
-    /// @dev number out of 1000 representing portion of inflows to be redirected to sideReceiver
-    ///      Ex: 300 would represent 30% 
-    int96 public sideReceiverPortion;
-
     /// @dev Super Token that the FlowSplitter will accept streams of
     ISuperToken public acceptedSuperToken;
 
+    mapping(address => int96) public splitterToFlow;
+    address[] receivers;
+    int96 public totalShares;
+
     constructor (
-        address _mainReceiver,
-        address _sideReceiver,
-        int96 _sideReceiverPortion,
+        address[] memory _receivers,
+        int96[] memory _flows,
         ISuperToken _acceptedSuperToken,
         ISuperfluid _host
     ) SuperAppBaseFlow (
@@ -37,12 +30,21 @@ contract FlowSplitter is SuperAppBaseFlow {
         true,
         true
     )  {
-
-        mainReceiver = _mainReceiver;
-        sideReceiver = _sideReceiver;
-        sideReceiverPortion = _sideReceiverPortion;
+        require(_receivers.length == _flows.length, "All receivers must have a flow");
         acceptedSuperToken = _acceptedSuperToken;
+        receivers = _receivers;
+        for(uint i = 0; i < _receivers.length; i++) {
+            splitterToFlow[_receivers[i]] = _flows[i];
+            totalShares += _flows[i];
+        }
+    }
 
+    function getFlowByReceiver(address receiver) public view returns (int96 flow) {
+        return splitterToFlow[receiver];
+    }
+
+    function getReceivers() public view returns (address[] memory) {
+        return receivers;
     }
 
     /// @dev checks that only the acceptedToken is used when sending streams into this contract
@@ -51,26 +53,63 @@ contract FlowSplitter is SuperAppBaseFlow {
         return superToken == acceptedSuperToken;
     }
 
-    /// @dev updates the split of the outflow to mainReceiver and sideReceiver
-    /// @param newSideReceiverPortion the new portion of inflows to be redirected to sideReceiver
-    function updateSplit(int96 newSideReceiverPortion) public {
-
-        sideReceiverPortion = newSideReceiverPortion;
+    /// @dev updates the split of the outflow to one of the receivers
+    /// @param newReceiverPortion the new portion of inflows to be redirected to the receiver
+    /// @param receiver the receiver address (already known present or new)
+    function updateSplit(int96 newReceiverPortion, address receiver) public {
 
         // get current outflow rate
-        int96 totalOutflowRate = acceptedSuperToken.getFlowRate(address(this), mainReceiver) + acceptedSuperToken.getFlowRate(address(this), sideReceiver);
+        int96 totalOutflowRate = calcTotalOutflow();
+
+        //recalc totalShares and add the new portion
+        totalShares += newReceiverPortion - splitterToFlow[receiver];
+        splitterToFlow[receiver] = newReceiverPortion;
+
+        //Delete the receiver if its new portion is 0
+        if(newReceiverPortion == 0) {
+            for (uint i = 0; i < receivers.length; i++) {
+                if (receivers[i] == receiver) {
+                    receivers[i] = receivers[receivers.length - 1];
+                    receivers.pop();
+                }
+            }
+            acceptedSuperToken.deleteFlow(address(this), receiver);
+        }
 
         // update outflows
-        acceptedSuperToken.updateFlow(
-            mainReceiver,
-            ( totalOutflowRate * (1000 - newSideReceiverPortion) ) / 1000
-        );
+        bool isAlreadyPresent;
+        for(uint i = 0; i < receivers.length; i++) {
+            if(totalOutflowRate > 0) {
+                acceptedSuperToken.updateFlow(
+                    receivers[i],
+                    ( totalOutflowRate * getFlowByReceiver(receivers[i]) ) / totalShares
+                );
+            }
 
-        acceptedSuperToken.updateFlow(
-            sideReceiver,
-            ( totalOutflowRate * newSideReceiverPortion ) / 1000
-        );
+            //check if the receiver is known to the splitter
+            if(receivers[i] == receiver) {
+                isAlreadyPresent = true;
+            }
+        }
 
+        //Add the receiver if it's a new one
+        if(!isAlreadyPresent && newReceiverPortion != 0) {
+            if(totalOutflowRate > 0) {
+                acceptedSuperToken.createFlow(
+                    receiver,
+                    ( totalOutflowRate * newReceiverPortion ) / totalShares
+                );
+            }
+            receivers.push(receiver);
+        }
+    }
+
+    function calcTotalOutflow() public view returns (int96) {
+        int96 helperOutflow;
+        for(uint i = 0; i < receivers.length; i++) {
+            helperOutflow += acceptedSuperToken.getFlowRate(address(this), receivers[i]);
+        }
+        return helperOutflow;
     }
 
     // ---------------------------------------------------------------------------------------------
@@ -91,37 +130,25 @@ contract FlowSplitter is SuperAppBaseFlow {
         int96 inflowRate = superToken.getFlowRate(sender, address(this));
 
         // if there's no outflow already, create outflows
-        if ( superToken.getFlowRate(address(this), mainReceiver) == 0 ) {
-            
-            newCtx = superToken.createFlowWithCtx(
-                mainReceiver,
-                ( inflowRate * (1000 - sideReceiverPortion) ) / 1000,
-                newCtx
-            );
-
-            newCtx = superToken.createFlowWithCtx(
-                sideReceiver,
-                ( inflowRate * sideReceiverPortion ) / 1000,
-                newCtx
-            );
-
+        if ( superToken.getFlowRate(address(this), receivers[0]) == 0 ) {
+            for(uint i = 0; i < receivers.length; i++) {
+                newCtx = superToken.createFlowWithCtx(
+                    receivers[i],
+                    ( inflowRate * getFlowByReceiver(receivers[i]) ) / totalShares,
+                    newCtx
+                );
+            }
         } 
         
         // otherwise, there's already outflows which should be increased
         else {
-
-            newCtx = superToken.updateFlowWithCtx(
-                mainReceiver,
-                acceptedSuperToken.getFlowRate(address(this), mainReceiver) + ( inflowRate * (1000 - sideReceiverPortion) ) / 1000,
-                newCtx
-            );
-
-            newCtx = superToken.updateFlowWithCtx(
-                sideReceiver,
-                acceptedSuperToken.getFlowRate(address(this), sideReceiver) + ( inflowRate * sideReceiverPortion ) / 1000,
-                newCtx
-            );
-
+            for(uint i = 0; i < receivers.length; i++) {
+                newCtx = superToken.updateFlowWithCtx(
+                    receivers[i],
+                    acceptedSuperToken.getFlowRate(address(this), receivers[i]) + ( inflowRate * getFlowByReceiver(receivers[i]) ) / totalShares,
+                    newCtx
+                );
+            }
         }
 
     }
@@ -143,19 +170,16 @@ contract FlowSplitter is SuperAppBaseFlow {
         int96 inflowChange = superToken.getFlowRate(sender, address(this)) - previousFlowRate;
 
         // update outflows
-        newCtx = superToken.updateFlowWithCtx(
-            mainReceiver,
-            acceptedSuperToken.getFlowRate(address(this), mainReceiver) + ( inflowChange * (1000 - sideReceiverPortion) ) / 1000,
-            newCtx
-        );
-
-        newCtx = superToken.updateFlowWithCtx(
-            sideReceiver,
-            acceptedSuperToken.getFlowRate(address(this), sideReceiver) + ( inflowChange * sideReceiverPortion ) / 1000,
-            newCtx
-        );
-
+        for(uint i = 0; i < receivers.length; i++) {
+            newCtx = superToken.updateFlowWithCtx(
+                receivers[i],
+                acceptedSuperToken.getFlowRate(address(this), receivers[i]) + ( inflowChange * getFlowByReceiver(receivers[i]) ) / totalShares,
+                newCtx
+            );
+        }
     }
+
+
 
     function onFlowDeleted(
         ISuperToken superToken,
@@ -172,10 +196,11 @@ contract FlowSplitter is SuperAppBaseFlow {
         newCtx = ctx;
 
         // remaining inflow is equal to total outflow less the inflow that just got deleted
-        int96 remainingInflow = (acceptedSuperToken.getFlowRate(address(this), mainReceiver) + acceptedSuperToken.getFlowRate(address(this), sideReceiver)) - previousFlowRate;
+        int96 remainingInflow = calcTotalOutflow() - previousFlowRate;
 
         // handle "rogue recipients" with sticky stream - see readme
-        if (receiver == mainReceiver || receiver == sideReceiver) {
+        //Originally, this checked if the receiver was either the main or side receiver. We can check this by seeing if the receiver has a defined flow
+        if(splitterToFlow[receiver] != 0) {
 
             newCtx = superToken.createFlowWithCtx(
                 receiver,
@@ -187,36 +212,25 @@ contract FlowSplitter is SuperAppBaseFlow {
         
         // if there is no more inflow, outflows should be deleted
         if ( remainingInflow <= 0 ) {
-            
-            newCtx = superToken.deleteFlowWithCtx(
-                address(this),
-                mainReceiver,
-                newCtx
-            );
-
-            newCtx = superToken.deleteFlowWithCtx(
-                address(this),
-                sideReceiver,
-                newCtx
-            );
-
+            for(uint i = 0; i < receivers.length; i++) {
+                newCtx = superToken.deleteFlowWithCtx(
+                    address(this),
+                    receivers[i],
+                    newCtx
+                );
+            }
         }
 
         // otherwise, there's still inflow left and outflows must be updated
         else {
 
-            newCtx = superToken.updateFlowWithCtx(
-                mainReceiver,
-                ( remainingInflow * (1000 - sideReceiverPortion) ) / 1000,
-                newCtx
-            );
-
-            newCtx = superToken.updateFlowWithCtx(
-                sideReceiver,
-                ( remainingInflow * sideReceiverPortion ) / 1000,
-                newCtx
-            );
-
+            for(uint i = 0; i < receivers.length; i++) {
+                newCtx = superToken.updateFlowWithCtx(
+                    receivers[i],
+                    ( remainingInflow * getFlowByReceiver(receivers[i]) ) / totalShares,
+                    newCtx
+                );
+            }
         }
     }
 

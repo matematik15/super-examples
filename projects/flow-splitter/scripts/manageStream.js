@@ -29,9 +29,9 @@ async function main() {
     const FlowSplitter = await ethers.getContractFactory("FlowSplitter");
     const flowSplitter = FlowSplitter.attach(process.env.FLOWSPLITTER_ADDRESS)
 
-    const tx = await flowSplitter.updateSplit(302)
+    const tx = await flowSplitter.updateSplit(5, "0xBBE530256ba3e70604a33F6a2931d1d23cE8452f")
     await tx.wait()
-
+    //"0x82AB97F5C95CA5779AE134F12fB8dB772c380B8e"
     
 
     // await createFlowOp.exec(testUser)

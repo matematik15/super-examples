@@ -8,29 +8,27 @@ const hre = require("hardhat");
 require("dotenv").config();
 
 async function main() {
-  const mainReceiver = "0xBBE530256ba3e70604a33F6a2931d1d23cE8452f" // Input mainReceiver address here
-  const sideReceiver = "0x6DA19238623C8a646679551f0863B6Bbc55E19D3" // Input sideReceiver address here
-
-  const sideReceiverPortion = 250 // Select a sideReceiver portion with a number between 1 and 1000 here 
-  // 300 would represent routing 30% of incoming flow to the sideReceiver
-
   // For help picking below addresses, head to: https://docs.superfluid.finance/superfluid/developers/networks
   //mumbai fDAIx: 0x5D8B4C2554aeB7e86F387B4d6c00Ac33499Ed01f
-  const acceptedSuperToken = "0x5D8B4C2554aeB7e86F387B4d6c00Ac33499Ed01f" // address of Super Token to be accepted to be streamed to FlowSplitter
+  //celo G$: 0x62B8B11039FcfE5aB0C56E502b1C372A3d2a9c7A
+  const acceptedSuperToken = "0x62B8B11039FcfE5aB0C56E502b1C372A3d2a9c7A" // address of Super Token to be accepted to be streamed to FlowSplitter
+  
   //mumbai host: 0xeb796bdb90ffa0f28255275e16936d25d3418603
-  const host = "0xeb796bdb90ffa0f28255275e16936d25d3418603" // address of Superfluid Host contract for network of deployment
+  //celo host: 0xA4Ff07cF81C02CFD356184879D953970cA957585
+  const host = "0xA4Ff07cF81C02CFD356184879D953970cA957585" // address of Superfluid Host contract for network of deployment
 
-  deployStandAlone(mainReceiver, sideReceiver, sideReceiverPortion, acceptedSuperToken, host);
-  // deployViaFactory(mainReceiver, sideReceiver, sideReceiverPortion, acceptedSuperToken, host);
+  const receivers = ["0xBBE530256ba3e70604a33F6a2931d1d23cE8452f", "0x6DA19238623C8a646679551f0863B6Bbc55E19D3", "0x37238cE2024f2FB6720d973BbDBD8282C4E51887"]
+  const flows = [20, 10, 10]
+  //deployStandAlone(receivers, flows, acceptedSuperToken, host);
+  deployViaFactory(receivers, flows, acceptedSuperToken, host);
 }
 
-const deployStandAlone = async function (mainReceiver, sideReceiver, sideReceiverPortion, acceptedSuperToken, host) {
+const deployStandAlone = async function (receivers, flows, acceptedSuperToken, host) {
 
   const FlowSplitter = await hre.ethers.getContractFactory("FlowSplitter");
   const flowSplitter = await FlowSplitter.deploy(
-    mainReceiver,
-    sideReceiver,
-    sideReceiverPortion,
+    receivers,
+    flows,
     acceptedSuperToken,
     host
   );
@@ -40,16 +38,15 @@ const deployStandAlone = async function (mainReceiver, sideReceiver, sideReceive
   console.log("Flow Splitter:", flowSplitter.address);
 }
 
-const deployViaFactory = async function (mainReceiver, sideReceiver, sideReceiverPortion, acceptedSuperToken, host) {
+const deployViaFactory = async function (receivers, flows, acceptedSuperToken, host) {
   const FlowSplitterFactory = await hre.ethers.getContractFactory("FlowSplitterFactory");
   const flowSplitterFactory = FlowSplitterFactory.attach(
     process.env.FACTORY_ADDRESS
   )
 
   const tx = await flowSplitterFactory.createNewSplitter(
-    mainReceiver,
-    sideReceiver,
-    sideReceiverPortion,
+    receivers,
+    flows,
     acceptedSuperToken,
     host
   );

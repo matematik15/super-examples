@@ -2,7 +2,7 @@ const { ethers } = require('hardhat');
 const { Framework } = require("@superfluid-finance/sdk-core");
 
 async function getEnv() {
-    const customHttpProvider = new ethers.providers.JsonRpcProvider(process.env.MUMBAI_URL);
+    const customHttpProvider = new ethers.providers.JsonRpcProvider(process.env.CELO_URL);
     const network = await customHttpProvider.getNetwork();
     const superfluidFramework = await Framework.create({
         chainId: network.chainId,
