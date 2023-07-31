@@ -4,7 +4,7 @@ require("dotenv").config()
 
 async function main() {
     const { testUser, superfluidFramework: sf } = await getEnv()
-    const daix = await sf.loadSuperToken("fDAIx")
+    const daix = await sf.loadSuperToken("G$")
     console.log(`daix.address: ${daix.address}`)
 
     console.log("running manage flow script...")
@@ -29,7 +29,7 @@ async function main() {
     const FlowSplitter = await ethers.getContractFactory("FlowSplitter");
     const flowSplitter = FlowSplitter.attach(process.env.FLOWSPLITTER_ADDRESS)
 
-    const tx = await flowSplitter.updateSplit(5, "0xBBE530256ba3e70604a33F6a2931d1d23cE8452f")
+    const tx = await flowSplitter.updateSplit(0, "0xBBE530256ba3e70604a33F6a2931d1d23cE8452f")
     await tx.wait()
     //"0x82AB97F5C95CA5779AE134F12fB8dB772c380B8e"
     

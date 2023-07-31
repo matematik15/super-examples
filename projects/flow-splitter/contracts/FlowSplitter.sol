@@ -73,7 +73,9 @@ contract FlowSplitter is SuperAppBaseFlow {
                     receivers.pop();
                 }
             }
-            acceptedSuperToken.deleteFlow(address(this), receiver);
+            if(totalOutflowRate > 0) {
+                acceptedSuperToken.deleteFlow(address(this), receiver);
+            }
         }
 
         // update outflows
